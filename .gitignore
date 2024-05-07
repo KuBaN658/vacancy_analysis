@@ -1,0 +1,4 @@
+.ipynb_checkpoints/
+__pycache__/
+data/vacancies_da.xlsx
+data/vacancies_ds.xlsx
