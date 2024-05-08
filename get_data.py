@@ -17,7 +17,7 @@ if __name__ == '__main__':
     columns=['id', 'name', 'published_at', 'alternate_url', 
              'type', 'employer', 'department', 'area', 
              'experience', 'key_skills', 'schedule', 'employment', 
-             'description', 'salary_from', 'salary_to', 'salary_currency'
+             'description', 'salary_from', 'salary_to'
     ]
     
     data_scientist_vacancies = pd.DataFrame(data_scientist_vacancies, columns=columns)
@@ -26,8 +26,11 @@ if __name__ == '__main__':
     data_scientist_vacancies.to_csv('data/new_vacancies_ds.csv', index=False)
     data_analyst_vacancies.to_csv('data/new_vacancies_da.csv', index=False)
 
-    merge_data('ds')
-    merge_data('da')
+    ds = merge_data('ds')
+    da = merge_data('da')
+
+    ds.to_csv('data/ds.csv', index=False)
+    da.to_csv('data/da.csv', index=False)
 
     
 

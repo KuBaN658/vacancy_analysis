@@ -2,6 +2,8 @@ import requests
 import re
 from tqdm import tqdm
 from time import sleep
+import pandas as pd
+from datetime import timedelta
 
 
 def get_ids_on_page(url):
@@ -13,7 +15,7 @@ def get_ids_on_page(url):
 def get_all_ids(text):
     i = 0
     url = f'https://api.hh.ru/vacancies?' \
-          f'text={text}&search_field=name&per_page=100&page={i}'
+          f'text={text}&period=3&search_field=name&per_page=100&page={i}'
     ids = []
 
     while data := get_ids_on_page(url):
@@ -47,21 +49,21 @@ def get_dataset(ids) :
                 data['employment']['name'],
                 re.sub(r"\<[^>]*\>", '', data['description']),
                 data['salary']['from'] if data['salary'] is not None else None,
-                data['salary']['to'] if data['salary'] is not None else None,
-                data['salary']['currency']  if data['salary'] is not None else None]
+                data['salary']['to'] if data['salary'] is not None else None
+            ]
         except:
             print(data)
         dataset.append(vacancy)
-        sleep(1)
+        sleep(0.2)
     return dataset
 
 def merge_data(vacancy_name: str):
     new = pd.read_csv(f'data/new_vacancies_{vacancy_name}.csv', parse_dates=['published_at'])
-    old = pd.read_excel(f'data/{vacancy_name}.csv')
+    old = pd.read_csv(f'data/{vacancy_name}.csv', parse_dates=['published_at'])
     new['published_at'] = new['published_at'].dt.tz_convert(None) + timedelta(hours=3)
 
-    merged = pd.concat((new, old)).sort_values(by=['id', 'published_at'])
-    merged.drop_duplicates(subset='id', inplace=True, keep='first')
-    merged.to_csv(f'data/{vacancy_name}.csv', index=False)
+    merged = pd.concat((old, new)).sort_values(by=['id', 'published_at'])
+    return merged.drop_duplicates(subset='id', keep='first').reset_index(drop=True)
+    
     
     
