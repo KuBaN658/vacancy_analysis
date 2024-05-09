@@ -51,10 +51,11 @@ def get_dataset(ids) :
                 data['salary']['from'] if data['salary'] is not None else None,
                 data['salary']['to'] if data['salary'] is not None else None
             ]
+            
         except:
             print(data)
         dataset.append(vacancy)
-        sleep(0.2)
+        sleep(0.5)
     return dataset
 
 def merge_data(vacancy_name: str):
