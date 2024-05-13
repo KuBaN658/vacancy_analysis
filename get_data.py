@@ -1,9 +1,6 @@
-import requests
-import re
 import pandas as pd
-from datetime import timedelta
 
-from utils import get_all_ids, get_dataset, merge_data
+from utils import get_all_ids, get_dataset
 
 
 if __name__ == '__main__':
@@ -14,23 +11,9 @@ if __name__ == '__main__':
     data_scientist_vacancies = get_dataset(data_science_ids)
     data_analyst_vacancies = get_dataset(data_analyst_ids)
     
-    columns=['id', 'name', 'published_at', 'alternate_url', 
-             'type', 'employer', 'department', 'area', 
-             'experience', 'key_skills', 'schedule', 'employment', 
-             'description', 'salary_from', 'salary_to'
-    ]
-    
-    data_scientist_vacancies = pd.DataFrame(data_scientist_vacancies, columns=columns)
-    data_analyst_vacancies = pd.DataFrame(data_analyst_vacancies, columns=columns)
-    
-    data_scientist_vacancies.to_csv('data/new_vacancies_ds.csv', index=False)
-    data_analyst_vacancies.to_csv('data/new_vacancies_da.csv', index=False)
+    data_scientist_vacancies.to_csv('data/ds.csv', index=False)
+    data_analyst_vacancies.to_csv('data/da.csv', index=False)
 
-    ds = merge_data('ds')
-    da = merge_data('da')
-
-    ds.to_csv('data/ds.csv', index=False)
-    da.to_csv('data/da.csv', index=False)
 
     
 

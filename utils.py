@@ -3,19 +3,38 @@ import re
 from tqdm import tqdm
 from time import sleep
 import pandas as pd
-from datetime import timedelta
+from typing import List, Optional
 
 
-def get_ids_on_page(url):
+def get_ids_on_page(url: str) -> List[int]:
+    """
+    Получает список идентификаторов вакансий с одной страницы результатов API.
+
+    Parameters:
+    url (str): URL страницы API для получения идентификаторов вакансий.
+
+    Returns:
+    List[int]: Список идентификаторов вакансий.
+    """
     data = requests.get(url).json()
     if data.get('items'):
         return [el['id'] for el in data['items']]
+    return []
 
 
-def get_all_ids(text):
+def get_all_ids(text: str) -> List[int]:
+    """
+    Получает все идентификаторы вакансий по заданному тексту поиска.
+
+    Parameters:
+    text (str): Текст для поиска вакансий.
+
+    Returns:
+    List[int]: Список всех идентификаторов вакансий.
+    """
     i = 0
     url = f'https://api.hh.ru/vacancies?' \
-          f'text={text}&period=3&search_field=name&per_page=100&page={i}'
+          f'text={text}&search_field=name&per_page=100&page={i}'
     ids = []
 
     while data := get_ids_on_page(url):
@@ -26,7 +45,16 @@ def get_all_ids(text):
     return ids
 
 
-def get_dataset(ids) :
+def get_dataset(ids: List[int]) -> pd.DataFrame:
+    """
+    Создает набор данных о вакансиях по списку идентификаторов.
+
+    Parameters:
+    ids (List[int]): Список идентификаторов вакансий.
+
+    Returns:
+    pd.DataFrame: DataFrame с данными о вакансиях.
+    """
     dataset = []
     for id in tqdm(ids):
         url = f"https://api.hh.ru/vacancies/{id}"
@@ -35,7 +63,12 @@ def get_dataset(ids) :
         req.close()
     
         try:
-            vacancy = [data['id'],
+            # Удаление HTML-тегов из описания вакансии
+            description_cleaned = re.sub(r"<[^>]*>", '', data['description'])
+            
+            # Сбор информации о вакансии в список
+            vacancy = [
+                data['id'],
                 data['name'],
                 data['published_at'],
                 data['alternate_url'],
@@ -47,24 +80,23 @@ def get_dataset(ids) :
                 [dic['name'] for dic in data['key_skills']],
                 data['schedule']['name'],
                 data['employment']['name'],
-                re.sub(r"\<[^>]*\>", '', data['description']),
+                description_cleaned,
                 data['salary']['from'] if data['salary'] is not None else None,
-                data['salary']['to'] if data['salary'] is not None else None
+                data['salary']['to'] if data['salary'] is not None else None,
+                data['salary']['currency'] if data['salary'] is not None else None,
             ]
-            
-        except:
-            print(data)
-        dataset.append(vacancy)
-        sleep(0.5)
-    return dataset
+        except Exception as e:
+            print(f"Error processing vacancy ID {id}: {e}")
+        else:
+            dataset.append(vacancy)
+            sleep(0.5)  # Задержка для соблюдения лимита запросов к API
 
-def merge_data(vacancy_name: str):
-    new = pd.read_csv(f'data/new_vacancies_{vacancy_name}.csv', parse_dates=['published_at'])
-    old = pd.read_csv(f'data/{vacancy_name}.csv', parse_dates=['published_at'])
-    new['published_at'] = new['published_at'].dt.tz_convert(None) + timedelta(hours=3)
+    # Преобразование списка вакансий в DataFrame
+    columns = ['id', 'name', 'published_at', 'alternate_url', 'type', 'employer',
+               'department', 'area', 'experience', 'key_skills', 'schedule',
+               'employment', 'description', 'salary_from', 'salary_to', 'currency_salary']
+    return pd.DataFrame(dataset, columns=columns)
 
-    merged = pd.concat((old, new)).sort_values(by=['id', 'published_at'])
-    return merged.drop_duplicates(subset='id', keep='first').reset_index(drop=True)
     
     
     
