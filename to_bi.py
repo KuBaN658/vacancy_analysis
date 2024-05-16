@@ -4,10 +4,12 @@ from utils import (
     calc_experience,
     calc_salary_bin, 
     calc_salary_num,
-    convert_salary, 
+    convert_salary,
+    get_coords, 
     lemmatize_corpus, 
     calc_skills, 
     calc_skills_from_description)
+
 
 da = pd.read_csv('data/da.csv', parse_dates=['published_at'])
 ds = pd.read_csv('data/ds.csv', parse_dates=['published_at'])
@@ -34,6 +36,7 @@ vacancies.drop_duplicates(
 )
 
 vacancies.experience = vacancies.experience.map(calc_experience)
+vacancies.reset_index(drop=True, inplace=True)
 
 vacancies['description_lemmatized'] = lemmatize_corpus(vacancies.description)
 
@@ -95,4 +98,17 @@ vacancies['salary_rub'] = vacancies.apply(convert_salary, axis=1, cb=CB)
 
 vacancies['salary_bin'] = vacancies.apply(calc_salary_bin, axis=1)
 
+coords = pd.read_csv('data/coords.csv')
+coords.columns = 'area', 'point'
+coords['lat'] = coords['point'].str.split(' ').map(lambda x: x[0])
+coords['lon']= coords['point'].str.split(' ').map(lambda x: x[1])
+coords.set_index('area', inplace=True)
+
+vacancies['lat'] = vacancies.area.map(coords['lat'])
+vacancies['lon'] = vacancies.area.map(coords['lon'])
+
 vacancies.to_csv('data/vacancies_bi.csv', index=False)
+
+vacancies['skills'] = vacancies['skills'].str.split(', ')
+vacancies = vacancies[['id', 'skills']].explode('skills')
+vacancies.to_csv('data/skills.csv', index=False)

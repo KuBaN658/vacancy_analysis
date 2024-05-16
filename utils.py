@@ -6,6 +6,15 @@ import pandas as pd
 import numpy as np
 from typing import List
 from pymystem3 import Mystem
+from yaml import load, FullLoader
+from typing import Tuple
+
+
+
+with open('config.yaml') as f:
+    config = load(f, Loader=FullLoader)
+    
+TOKEN = config['api_key']
 
 
 def get_ids_on_page(url: str) -> List[int]:
@@ -328,6 +337,40 @@ def calc_salary_bin(row: pd.Series) -> str:
             return 'От 100 тысяч до 200 тысяч'
         else:
             return 'Меньше 100 тысяч'
+        
+
+
+def get_coords(value: str) -> Tuple[float, float]:
+    """
+    Получает географические координаты (широту и долготу) для заданного адреса.
+
+    Использует Yandex Geocoding API для преобразования адреса в географические координаты.
+    
+    Parameters:
+    value (str): Адрес или название места, для которого необходимо получить координаты.
+
+    Returns:
+    Tuple[float, float]: Кортеж, содержащий широту и долготу соответственно.
+    """
+    
+    # Формирование URL для запроса к Yandex Geocoding API)
+    url = f'https://geocode-maps.yandex.ru/1.x?apikey={TOKEN}' \
+          f'geocode={value}&lang=ru_RU&format=json'
+    
+    # Выполнение запроса и получение ответа
+    response = requests.get(url)
+    data = response.json()
+    print(data)
+    
+    # Закрытие соединения
+    response.close()
+    
+    # Извлечение широты и долготы из полученных данных
+    lat, lon = data['response']["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["Point"]['pos'].split()
+    
+    # Возвращение широты и долготы в виде чисел с плавающей точкой
+    return float(lat), float(lon)
+
     
     
     
