@@ -4,17 +4,17 @@ from tqdm import tqdm
 from time import sleep
 import pandas as pd
 import numpy as np
-from typing import List
+from typing import List, Optional, Tuple
 from pymystem3 import Mystem
 from yaml import load, FullLoader
-from typing import Tuple
 
 
-
-with open('config.yaml') as f:
-    config = load(f, Loader=FullLoader)
+# Этот код понадобится если будет использоваться api yandex maps 
+# для получения координат населенных пунктов используется функция get_coords
+# with open('config.yaml') as f:
+#     config = load(f, Loader=FullLoader)
     
-TOKEN = config['api_key']
+# TOKEN = config['api_key']
 
 
 def get_ids_on_page(url: str) -> List[int]:
@@ -340,7 +340,7 @@ def calc_salary_bin(row: pd.Series) -> str:
         
 
 
-def get_coords(value: str) -> Tuple[float, float]:
+def get_coords(value: str, token) -> Tuple[float, float]:
     """
     Получает географические координаты (широту и долготу) для заданного адреса.
 
@@ -354,7 +354,7 @@ def get_coords(value: str) -> Tuple[float, float]:
     """
     
     # Формирование URL для запроса к Yandex Geocoding API)
-    url = f'https://geocode-maps.yandex.ru/1.x?apikey={TOKEN}' \
+    url = f'https://geocode-maps.yandex.ru/1.x?apikey={token}' \
           f'geocode={value}&lang=ru_RU&format=json'
     
     # Выполнение запроса и получение ответа
@@ -370,6 +370,88 @@ def get_coords(value: str) -> Tuple[float, float]:
     
     # Возвращение широты и долготы в виде чисел с плавающей точкой
     return float(lat), float(lon)
+
+
+def process_frequency(value: str) -> Optional[str]:
+    """
+    Стандартизирует название навыка на основе предопределенных критериев.
+
+    Функция принимает на вход название навыка и возвращает стандартизированную
+    версию названия навыка, если оно соответствует определенным ключевым словам.
+    Если название навыка является одним из указанных ключевых слов, которые следует
+    игнорировать или считать нерелевантными, функция возвращает значение NaN.
+
+    Параметры:
+    value (str): Исходное название навыка для обработки.
+
+    Возвращает:
+    Optional[str]: Стандартизированное название навыка или NaN, если навык следует игнорировать.
+    """
+    
+    # Проверка наличия различных навыков и их стандартизация, если они найдены
+    if 'excel' in value:
+        return 'excel'
+    if 'power bi' in value or 'powerbi' in value:
+        return 'power bi'
+    if 'powerpoint' in value:
+        return 'powerpoint'
+    if 'spark' in value:
+        return 'spark'
+    if ' bi ' in value:
+        return 'bi'
+    if 'airflow' in value:
+        return 'airflow'
+    if ' 1c' in value:
+        return '1c'
+    if 'a/b' in value:
+        return 'a/b test'
+    if 'hadoop' in value:
+        return 'hadoop'
+    # Игнорирование определенных ключевых слов и возвращение NaN
+    if (value == 'анализ данных' or value == 'machine learning' or 
+        value == 'ml' or value == 'data science'):
+        return np.nan
+    else:
+        # Возврат исходного значения, если ни один из критериев не соответствует
+        return value
+    
+
+def calc_salary_mode(ser: pd.Series) -> pd.Series:
+    """
+    Вычисляет моду зарплат из серии, исключая записи, где зарплата не указана.
+
+    Parameters:
+    ser (pd.Series): Серия значений зарплат.
+
+    Returns:
+    pd.Series: Мода зарплатной серии.
+    """
+    return ser[ser != 'ЗП не указана'].mode()  # Возвращаем моду, исключая записи "ЗП не указана"
+
+    
+def calc_typical_place(vacancies: pd.DataFrame, name_type: str, grades: Tuple) -> pd.DataFrame:
+    """
+    Собирает и возвращает таблицу с типичными характеристиками мест работы для заданной категории вакансий.
+
+    Функция агрегирует данные по работодателям, типам занятости, графикам работы и категориям зарплат для каждого уровня опыта.
+    Результат представляется в виде таблицы, которая может быть использована для анализа типичных условий работы в отрасли.
+
+    Parameters:
+    name_type (str): Категория вакансии ('da' для аналитиков данных или 'ds' для датасаентистов).
+
+    Returns:
+    pd.DataFrame: Таблица с типичными характеристиками мест работы.
+    """
+    idx = ['Работодатель', 'Тип занятости', 'График работы', 'Заработная плата']
+    # Агрегируем данные по каждому уровню опыта и каждой характеристике места работы
+    table = pd.concat(
+        [vacancies[(vacancies.name_type == name_type) & (vacancies.experience == grade)]
+         .agg(dict(zip(['employer', 'employment', 'schedule', 'salary_bin'], [pd.Series.mode]*3 + [calc_salary_mode])))
+         .T for grade in grades], axis=1
+    ).fillna('Нет данных')[0]  # Заполняем отсутствующие данные
+    table.index = idx  # Назначаем индекс таблицы
+    table.columns = grades  # Назначаем названия колонок
+    return table
 
     
     

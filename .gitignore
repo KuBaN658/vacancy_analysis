@@ -2,8 +2,9 @@
 __pycache__/
 data/vacancies_da.xlsx
 data/vacancies_ds.xlsx
-data/da (1).gsheet
+data/vacancies_bi.gsheet
 data/da.gsheet
+data/skills.gsheet
 tempCodeRunnerFile.py
 Untitled.ipynb
 config.yaml
