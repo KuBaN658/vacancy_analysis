@@ -10,7 +10,7 @@
 - Если необходимо подгрузить координаты городов использовать функцию get_coords из файла utils.py и добавить свой api_key yandex_maps.
 
 ## Сcылки
-- [Исследовательский ноутбук с проектом](https://github.com/KuBaN658/vacancy_analysis/blob/main/vacancy_analysis.ipynb)
+- [Исследовательский ноутбук проекта](https://github.com/KuBaN658/vacancy_analysis/blob/main/vacancy_analysis.ipynb)
 - [Дашборд-презентация проекта](https://datalens.yandex/zgv4q9aqxwv6n)
 
 #### Пример диаграм в jupyter notebook
